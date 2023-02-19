@@ -1,0 +1,34 @@
+extends layout 
+
+block content 
+  h1 #{title}: #{author.name}
+  p
+    if author.date_of_birth && author.date_of_death
+      | (#{author.dob_formatted} - #{author.dod_formatted})
+    else if author.date_of_birth 
+      | (#{author.dob_formatted} - living)
+    else 
+      | (No dates found.)
+  hr
+  h4 Books
+  ul 
+    each book in books
+      li 
+        a(href=book.url) #{book.title}
+        |  - 
+        each item in book.genre
+          if book.genre.length > 0
+            if book.genre.indexOf(item) < book.genre.length - 1
+              span #[em #{item.name}, ]
+            else
+              span #[em #{item.name}]
+        else 
+          p No listed genres.
+      p #{book.summary}
+
+    else 
+      li 
+        p No books found.
+    
+
+    

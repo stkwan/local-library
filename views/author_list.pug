@@ -1,0 +1,15 @@
+extends layout 
+
+block content 
+  h1= title
+  ul 
+    each author in authors
+      li
+        a(href=author.url) #{author.name} 
+        if author.date_of_death && author.date_of_death
+          | (#{author.dob_formatted} - #{author.dod_formatted})
+        else if author.date_of_birth
+          | (#{author.dob_formatted} - living)
+        else 
+          | (No dates found.)
+        
