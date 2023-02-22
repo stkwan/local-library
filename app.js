@@ -36,7 +36,7 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use("/catalog", catalogRouter); // Add catalog routes to middleware chain.
 
-// catch 404 and forward to error handler
+// catch 404 and forward to error handler -SKstart Question: Does this get called if a request is left hanging? Notice it does not accept err so I assume err gets passed to the next middleware function-SKend   
 app.use(function(req, res, next) {
   next(createError(404));
 });

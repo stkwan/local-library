@@ -1,6 +1,10 @@
 const BookInstance = require("../models/bookinstance");
+const Book = require("../models/book");
 
 const async = require("async");
+const { body, validationResult } = require("express-validator");
+const mongoose = require('mongoose');
+
 
 // Display list of all BookInstances.
 exports.bookinstance_list = function (req, res, next) {
@@ -54,14 +58,103 @@ exports.bookinstance_detail = (req, res, next) => {
 };
 
 // Display BookInstance create form on GET.
-exports.bookinstance_create_get = (req, res) => {
-  res.send("NOT IMPLEMENTED: BookInstance create GET");
+exports.bookinstance_create_get = (req, res, next) => {
+  // Find all books
+  Book.find()
+    .sort({title: 1})
+    .exec(function(err, books) {
+      if (err) {
+        return next(err);
+      }
+      // Successful, so render
+      res.render('bookinstance_form', {
+        title: 'Create Book Instance',
+        books,
+        statuses: ['Available', 'Maintenance', 'Loaned', 'Reserved'],
+      })
+    });
+
+  //res.send("NOT IMPLEMENTED: BookInstance create GET");
 };
 
 // Handle BookInstance create on POST.
-exports.bookinstance_create_post = (req, res) => {
-  res.send("NOT IMPLEMENTED: BookInstance create POST");
-};
+exports.bookinstance_create_post = [
+  // Add suffix to the time to ensure date is not off by one day
+  (req, res, next) => {
+    req.body.due_back += 'T00:00:00';
+    next();
+  },
+
+  // validate and sanitize
+  // save a new bookinstance to a variable
+  // if errors, render sanitized inputs and error messages
+  // else save the new book instance
+
+  body('book')
+    .trim()
+    .isLength( {min: 1} )
+    .escape()
+    .withMessage('Invalid book'),
+  body('imprint')
+    .trim()
+    .isLength( {min: 1} )
+    .escape()
+    .withMessage('Imprint must not be empty'),
+  body('status')
+    .trim()
+    .isLength({ min: 1 })
+    .escape()
+    .withMessage('Status must not be empty'),
+  body('date')
+    .optional({ checkFalsy: true })
+    .isISO8601()
+    .toDate(),
+  
+  function(req, res, next) {
+
+    const bookinstance = new BookInstance({
+      book: req.body.book,
+      imprint: req.body.imprint,
+      status: req.body.status,
+      due_back: req.body.due_back,
+    });
+
+    const errors = validationResult(req);
+    
+    if (!errors.isEmpty()) {
+      Book.find()
+        .sort({ title: 1 })
+        .exec(function (err, books) {
+          if (err) {
+            return next(err);
+          }
+          // Success, so render
+          res.render('bookinstance_form', {
+            title: "Create Book Instance",
+            books,
+            selected_book: bookinstance.book,
+            errors: errors.array(),
+            bookinstance,
+            statuses: ['Available', 'Maintenance', 'Loaned', 'Reserved'],
+            selected_status: bookinstance.status,
+          });
+        });   
+    } else {
+      // No errors so, save
+      bookinstance.save((err) => {
+        if (err) {
+          return next(err);
+        }
+        // Successful: redirect to new record.
+        res.redirect(bookinstance.url);
+      });
+    }
+
+   
+  },
+
+  //res.send("NOT IMPLEMENTED: BookInstance create POST");
+];
 
 // Display BookInstance delete form on GET.
 exports.bookinstance_delete_get = (req, res) => {
